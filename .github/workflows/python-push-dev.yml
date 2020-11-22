@@ -30,7 +30,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=20 --max-line-length=127 --ignore=F401 --statistics
     - name: Test with pytest
       env:
-        GCP_CRED: ${{ secrets.CODECOV_TOKEN }}
+        GCP_CRED: ${{ secrets.GCP_CRED }}
         GOOGLE_APPLICATION_CREDENTIALS: ./service_account.json
       run: |
         echo $GCP_CRED >> ./service_account.json && cd tests && export PYTHONPATH='..' && pytest --cov=../xialib_gcp --cov-report=xml
