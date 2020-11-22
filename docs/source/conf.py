@@ -25,7 +25,7 @@ author = 'Soral'
 
 # The full version, including alpha/beta/rc tags
 release = None
-with open(os.path.abspath(os.path.join('..', '..', 'xialib', '__init__.py'))) as fp:
+with open(os.path.abspath(os.path.join('..', '..', 'xialib_gcp', '__init__.py'))) as fp:
     for line in fp.readlines():
         if line.startswith('__version__'):
             release = line.split('"')[1]
@@ -39,6 +39,8 @@ if not release:
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

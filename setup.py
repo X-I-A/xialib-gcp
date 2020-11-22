@@ -34,6 +34,7 @@ setuptools.setup(
         'xialib',
         'google-auth',
         'gcsfs',
+        'google-cloud-pubsub',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
