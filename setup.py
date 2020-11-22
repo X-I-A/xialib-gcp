@@ -32,11 +32,8 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'xialib',
-        'google-cloud-storage'
         'google-auth',
         'gcsfs',
-        'pandas',
-        'pyarrow',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
