@@ -33,7 +33,7 @@ jobs:
         GCP_CRED: ${{ secrets.CODECOV_TOKEN }}
         GOOGLE_APPLICATION_CREDENTIALS: ./service_account.json
       run: |
-        cat $GCP_CRED >> ./service_account.json && cd tests && export PYTHONPATH='..' && pytest --cov=../xialib_gcp --cov-report=xml
+        echo $GCP_CRED >> ./service_account.json && cd tests && export PYTHONPATH='..' && pytest --cov=../xialib_gcp --cov-report=xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
