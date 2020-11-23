@@ -46,3 +46,9 @@ def test_publish_and_streaming_pull(publisher: PubsubPublisher):
     task2 = subscriber2.stream(project_id, subscription2, callback=callback, timeout=2)
     loop.run_until_complete(asyncio.wait([task1, task2]))
     loop.close()
+
+def test_exceptions():
+    with pytest.raises(TypeError):
+        sub = PubsubSubscriber(sub_client=object())
+    with pytest.raises(TypeError):
+        pub = PubsubPublisher(pub_client=object())

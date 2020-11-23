@@ -28,5 +28,5 @@ class PubsubPublisher(Publisher):
             message_no = future.result(30)
             self.logger.info("Sent to {}-{}: {}".format(project_id, topic_id, header))
             return message_no
-        except TimeoutError as e:
-            self.logger.error("Publish Timeout {}-{}: {}".format(project_id, topic_id, header))
+        except TimeoutError as e:  # pragma: no cover
+            self.logger.error("Publish Timeout {}-{}: {}".format(project_id, topic_id, header))  # pragma: no cover

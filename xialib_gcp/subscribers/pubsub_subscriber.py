@@ -53,8 +53,8 @@ class PubsubSubscriber(Subscriber):
         with self.subscriber:
             try:
                 streaming_pull_future.result(timeout)
-            except TimeoutError:
-                streaming_pull_future.cancel()
+            except TimeoutError:  # pragma: no cover
+                streaming_pull_future.cancel()  # pragma: no cover
 
 
     def ack(self, project_id: str, subscription_id: str, message_id: str):
