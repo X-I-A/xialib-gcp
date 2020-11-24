@@ -6,11 +6,6 @@ from google.cloud import pubsub_v1
 from xialib.subscriber import Subscriber
 from typing import Callable
 
-def pubsub_callback(message, subscriber: Subscriber, project_id: str, subscription_id: str, custom_callback: Callable):
-    return_message = {'header': message.attributes,
-                      'data': message.data,
-                      'id': message.ack_id}
-    custom_callback(subscriber, return_message, project_id, subscription_id)
 
 class PubsubSubscriber(Subscriber):
     """Google Pubsub based subscriber
@@ -42,6 +37,12 @@ class PubsubSubscriber(Subscriber):
                 break
 
     async def stream(self, project_id: str, subscription_id: str, callback: Callable, timeout: int = None):
+        def pubsub_callback(message, subscriber: Subscriber, project_id: str, subscription_id: str,
+                            custom_callback: Callable):
+            return_message = {'header': message.attributes,
+                              'data': message.data,
+                              'id': message.ack_id}
+            custom_callback(subscriber, return_message, project_id, subscription_id)
         subscription_path = self.subscriber.subscription_path(project_id, subscription_id)
         prepared_callback = partial(pubsub_callback,
                                     subscriber=self,

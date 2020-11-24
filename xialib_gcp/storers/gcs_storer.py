@@ -1,9 +1,9 @@
 import io
 import os
 import gcsfs
-from xialib.storer import Storer
+from xialib.storer import IOStorer
 
-class GCSStorer(Storer):
+class GCSStorer(IOStorer):
     """Google Cloud Plateform Based
     """
     store_types = ['gcs']
@@ -12,9 +12,11 @@ class GCSStorer(Storer):
         super().__init__()
         self.fs = gcsfs.GCSFileSystem(**kwargs)
 
-    def get_io_stream(self, location: str):
-        with self.fs.open(location, 'rb') as fp:
-            yield fp
+    def exists(self, location: str):
+        return self.fs.exists(location)
+
+    def join(self, *args):
+        return '/'.join([item for item in args])
 
     def read(self, location: str) -> bytes:
         with self.fs.open(location, 'rb') as fp:
@@ -39,3 +41,15 @@ class GCSStorer(Storer):
             return True
         else:
             return False
+
+    def mkdir(self, path: str):
+        pass
+
+    def get_io_stream(self, location: str):
+        with self.fs.open(location, 'rb') as fp:
+            yield fp
+
+    def get_io_wb_stream(self, location: str):
+        with self.fs.open(location, 'wb') as fp:
+            yield fp
+

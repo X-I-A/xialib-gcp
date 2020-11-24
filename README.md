@@ -8,6 +8,10 @@ Xeed-Insight-Agent Data Solution Library - Google Cloud Platform extention
 ## Introduction
 This library defines the basic units of Google Cloud Platform of Xeed, Insight and Agent Solution. 
 ### Storer
-*  Google Cloud Storage Storer
+* Google Cloud Storage Storer
+### Publisher
+* Google Pubsub Publisher
+### Subscriber
+* Google Pubsub Subscriber
 ### Depositor
-* 
+* Google Firestore Depositor
