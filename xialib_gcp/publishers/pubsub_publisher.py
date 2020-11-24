@@ -17,6 +17,24 @@ class PubsubPublisher(Publisher):
         else:
             self.publisher = pub_client
 
+    def check_destination(self, project_id: str, topic_id: str):
+        """ Check if it possible to publish to the specified project / topic
+
+        Notes:
+            We will send an empty message to check the available by using the return error code.
+            This is due to the insufficient privilege of pubsub.publisher(IAM)
+        """
+        topic_path = self.publisher.topic_path(project_id, topic_id)
+        future = self.publisher.publish(topic_path, b'')
+        try:
+            future.result()
+        except Exception as e: # Will throw exception because future is in another thread
+            err_msg = format(e)
+            if 'non-empty data' in err_msg:
+                return True
+            else:
+                return False
+
     def _send(self, project_id: str, topic_id: str, header: dict, data):
         topic_path = self.publisher.topic_path(project_id, topic_id)
         try:
