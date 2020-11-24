@@ -36,6 +36,10 @@ def test_publish_and_pull(publisher: PubsubPublisher):
         assert int(header['age']) == 2
         subscriber.ack(project_id, subscription1, id)
 
+def test_check_destination(publisher: PubsubPublisher):
+    assert publisher.check_destination(project_id, topic1)
+    assert not publisher.check_destination(project_id, 'error_topic')
+
 def test_publish_and_streaming_pull(publisher: PubsubPublisher):
     publisher.publish(project_id, topic1, header_1, gzip.compress(b'[]'))
     publisher.publish(project_id, topic2, header_1, gzip.compress(b'[]'))
@@ -46,6 +50,7 @@ def test_publish_and_streaming_pull(publisher: PubsubPublisher):
     task2 = subscriber2.stream(project_id, subscription2, callback=callback, timeout=2)
     loop.run_until_complete(asyncio.wait([task1, task2]))
     loop.close()
+
 
 def test_exceptions():
     with pytest.raises(TypeError):
