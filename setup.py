@@ -35,6 +35,7 @@ setuptools.setup(
         'google-auth',
         'gcsfs',
         'google-cloud-pubsub',
+        'google-cloud-firestore',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
