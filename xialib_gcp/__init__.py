@@ -17,4 +17,4 @@ __all__ = \
     subscribers.__all__ + \
     depositors.__all__
 
-__version__ = "0.1.5"
+__version__ = "0.1.6"

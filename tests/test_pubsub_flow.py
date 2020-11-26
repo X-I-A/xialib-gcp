@@ -19,6 +19,7 @@ header_1 = {'age': 2, 'data_format': 'record', 'data_spec': 'x-i-a', 'data_encod
 def callback(s: PubsubSubscriber, message: dict, source, subscription_id):
     header, data, id = s.unpack_message(message)
     assert int(header['age']) == 2
+    s.ack(source, subscription_id, id)
 
 
 @pytest.fixture(scope='module')
@@ -29,12 +30,12 @@ def publisher():
 
 
 def test_publish_and_pull(publisher: PubsubPublisher):
-    publisher.publish(project_id, topic1, header_1, gzip.compress(b'[]'))
+    publisher.publish(project_id, topic2, header_1, gzip.compress(b'[]'))
     subscriber = PubsubSubscriber(sub_client=pubsub_v1.SubscriberClient())
-    for message in subscriber.pull(project_id, subscription1):
+    for message in subscriber.pull(project_id, subscription2):
         header, data, id = subscriber.unpack_message(message)
         assert int(header['age']) == 2
-        subscriber.ack(project_id, subscription1, id)
+        subscriber.ack(project_id, subscription2, id)
 
 def test_check_destination(publisher: PubsubPublisher):
     assert publisher.check_destination(project_id, topic1)
