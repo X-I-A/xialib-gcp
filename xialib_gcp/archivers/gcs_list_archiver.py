@@ -28,7 +28,7 @@ class GCSListArchiver(ListArchiver):
     def _set_current_topic_table(self, topic_id: str, table_id: str):
         self.topic_path = 'gs://' + self.project_id + '-' + self.topic_id
         self.table_path = self.storer.join(self.topic_path, self.table_id)
-        if not self.storer.exists(self.topic_path):
+        if not self.storer.exists(self.project_id + '-' + self.topic_id):
             self.logger.info("Bucket of Project/Topic doesn't exist", extra=self.log_context)
             raise FileNotFoundError("XIA-010004")
 
@@ -39,10 +39,11 @@ class GCSListArchiver(ListArchiver):
                 for key, value in self.workspace[0].items():
                     item_name = base64.b32encode(key.encode()).decode()
                     f.writestr(item_name, json.dumps(value, ensure_ascii=False))
+                f.writestr(base64.b32encode(b'x-i-a-c-t-r-l-f-i-e-l-d').decode(), '')
         return archive_file_name
 
     def append_archive(self, append_merge_key: str, fields: List[str] = None):
-        field_list = fields
+        field_list = fields if fields is not None else list()
         archive_file_name = self.storer.join(self.table_path, self._get_filename(append_merge_key))
         for read_io in self.storer.get_io_stream(archive_file_name):
             with zipfile.ZipFile(read_io) as f:
