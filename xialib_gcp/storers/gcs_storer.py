@@ -1,6 +1,8 @@
 import io
 import os
+import google.auth
 import gcsfs
+
 from xialib.storer import IOStorer
 
 class GCSStorer(IOStorer):
@@ -11,6 +13,7 @@ class GCSStorer(IOStorer):
     def __init__(self, **kwargs):
         super().__init__()
         self.fs = gcsfs.GCSFileSystem(**kwargs)
+        self.project_id = google.auth.default()[1]
 
     def exists(self, location: str):
         return self.fs.exists(location)
