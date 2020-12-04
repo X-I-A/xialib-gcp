@@ -1,5 +1,6 @@
 import os
 import json
+import datetime
 import asyncio
 from functools import partial
 from google.cloud import pubsub_v1
@@ -50,13 +51,12 @@ class PubsubSubscriber(Subscriber):
                                     subscription_id=subscription_id,
                                     custom_callback=callback)
         streaming_pull_future = self.subscriber.subscribe(subscription_path, callback=prepared_callback)
-        self.logger.warning("Listing on {}".format(subscription_path))
-        with self.subscriber:
-            try:
-                streaming_pull_future.result(timeout)
-            except TimeoutError:  # pragma: no cover
-                streaming_pull_future.cancel()  # pragma: no cover
-
+        self.logger.warning("Listening on {}".format(subscription_path))
+        total_time = 0
+        while timeout is None or total_time < timeout:
+            await asyncio.sleep(1)
+            total_time += 1
+        streaming_pull_future.cancel()
 
     def ack(self, project_id: str, subscription_id: str, message_id: str):
         subscription_path = self.subscriber.subscription_path(project_id, subscription_id)
