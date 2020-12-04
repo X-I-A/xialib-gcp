@@ -29,7 +29,7 @@ class GCSListArchiver(ListArchiver):
         self.topic_path = 'gs://' + self.project_id + '-' + self.topic_id
         self.table_path = self.storer.join(self.topic_path, self.table_id)
         if not self.storer.exists(self.project_id + '-' + self.topic_id):
-            self.logger.info("Bucket of Project/Topic doesn't exist", extra=self.log_context)
+            self.logger.error("Bucket of Project/Topic doesn't exist", extra=self.log_context)
             raise FileNotFoundError("XIA-010004")
 
     def _archive_data(self):
