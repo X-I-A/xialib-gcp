@@ -36,6 +36,21 @@ class BigQueryAdaptor(Adaptor):
         self.project_id = project_id
         self.location = location
 
+    def _escape_column_name(self, old_name: str) -> str:
+        """A column name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_),
+        and it must start with a letter or underscore. The maximum column name length is 128 characters.
+        A column name cannot use any of the following prefixes: _TABLE_, _FILE_, _PARTITION
+        """
+        better_name = old_name.translate({ord(c): "_" for c in r"!@#$%^&*()[]{};:,./<>?\|`~-=+"})
+        if better_name[0].isdigit():
+            better_name = '_' + better_name
+        if better_name.upper().startswith('_TABLE_') or \
+            better_name.upper().startswith('_FILE_') or \
+            better_name.upper().startswith('_PARTITION'):
+            better_name = '_' + better_name
+        if len(better_name) > 128:
+            better_name = better_name[:128]
+        return better_name
 
     def _get_field_type(self, type_chain: list):
         for type in reversed(type_chain):
@@ -48,7 +63,8 @@ class BigQueryAdaptor(Adaptor):
     def _get_table_schema(self, field_data: List[dict]) -> List[dict]:
         schema = list()
         for field in field_data:
-            schema_field = {'name': field['field_name'], 'description': field.get('description', '')}
+            schema_field = {'name': self._escape_column_name(field['field_name']),
+                            'description': field.get('description', '')}
             if field.get('key_flag', False):
                 schema_field['mode'] = 'REQUIRED'
             schema_field['type'] = self._get_field_type(field['type_chain'])
@@ -106,10 +122,11 @@ class BigQueryAdaptor(Adaptor):
         return True
 
     def insert_raw_data(self, table_id: str, field_data: List[dict], data: List[dict], **kwargs) -> bool:
+        new_data = [{self._escape_column_name(k): v for k, v in line.items()} for line in data]
         try:
-            errors = self.connection.insert_rows_json(self._get_table_id(table_id), data)
-        except BadRequest as e:
-            return False
+            errors = self.connection.insert_rows_json(self._get_table_id(table_id), new_data)
+        except BadRequest as e:  # pragma: no cover
+            return False  # pragma: no cover
         if errors == []:
             return True
         else:  # pragma: no cover
