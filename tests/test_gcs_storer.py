@@ -3,7 +3,6 @@ import pytest
 from xialib_gcp import GCSStorer
 
 
-
 @pytest.fixture(scope='module')
 def storer():
     storer = GCSStorer()
