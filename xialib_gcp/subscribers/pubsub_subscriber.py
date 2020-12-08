@@ -56,6 +56,7 @@ class PubsubSubscriber(Subscriber):
         while timeout is None or total_time < timeout:
             await asyncio.sleep(1)
             total_time += 1
+        self.subscriber.close()
         streaming_pull_future.cancel()
 
     def ack(self, project_id: str, subscription_id: str, message_id: str):
