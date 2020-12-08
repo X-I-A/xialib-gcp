@@ -31,17 +31,13 @@ setuptools.setup(
     url="https://github.com/X-I-A/xialib-gcp",
     packages=setuptools.find_packages(),
     install_requires=[
-        "xialib",
-        "google-auth",
+        'xialib',
+        'google-auth',
+        'gcsfs',
+        'google-cloud-pubsub',
+        'google-cloud-firestore',
+        'google-cloud-bigquery',
     ],
-    extras_require={
-        "adaptor": ["google-cloud-bigquery"],
-        "archiver": ["gcsfs"],
-        "depositor": ["google-cloud-firestore"],
-        "publisher": ["google-cloud-pubsub"],
-        "storer": ["gcsfs"],
-        "subscriber": ["google-cloud-pubsub"],
-    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
