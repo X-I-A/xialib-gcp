@@ -36,6 +36,7 @@ setuptools.setup(
         'gcsfs',
         'google-cloud-pubsub',
         'google-cloud-firestore',
+        'google-cloud-bigquery',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
