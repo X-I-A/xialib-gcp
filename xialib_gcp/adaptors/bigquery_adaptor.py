@@ -81,7 +81,11 @@ class BigQueryAdaptor(Adaptor):
         bq_table_id = '.'.join([dataset_id, table_id.split('.')[-1]])
         return bq_table_id
 
-    def create_table(self, table_id: str, meta_data: dict, field_data: List[dict], raw_flag: bool = False):
+
+    def create_table(self, source_id: str, meta_data: dict, field_data: List[dict],
+                     raw_flag: bool = False, table_id: str = None):
+        if table_id is None:
+            table_id = source_id
         dataset = bigquery.Dataset(self._get_dataset_id(table_id))
         dataset.location = self.location
         try:
@@ -99,13 +103,15 @@ class BigQueryAdaptor(Adaptor):
         table = self.connection.create_table(table, True, timeout=30)
         return True if table else False
 
-    def drop_table(self, table_id: str):
+    def drop_table(self, source_id: str):
+        table_id = source_id
         try:
             self.connection.delete_table(self._get_table_id(table_id), not_found_ok=True, timeout=30)
         except Exception as e:  # pragma: no cover
             return False  # pragma: no cover
 
-    def rename_table(self, old_table_id: str, new_table_id: str):
+    def rename_table(self, source_id: str, new_table_id: str):
+        old_table_id = source_id
         self.drop_table(new_table_id)
         job = self.connection.copy_table(self._get_table_id(old_table_id),
                                          self._get_table_id(new_table_id),
@@ -114,14 +120,16 @@ class BigQueryAdaptor(Adaptor):
         # self.drop_table(old_table_id)
         return True
 
-    def get_ctrl_info(self, table_id):
+    def get_ctrl_info(self, source_id):
+        table_id = source_id
         # Bigquery doesn't need ctrl info to build operation queries, neither for sequence control
-        return {'TABLE_ID': table_id, 'META_DATA': dict(), 'FIELD_LIST': [{}]}
+        return {'SOURCE_ID': source_id, 'TABLE_ID': table_id, 'META_DATA': dict(), 'FIELD_LIST': [{}]}
 
-    def set_ctrl_info(self, table_id, **kwargs):
+    def set_ctrl_info(self, source_id: str, **kwargs):
         return True
 
-    def insert_raw_data(self, table_id: str, field_data: List[dict], data: List[dict], **kwargs) -> bool:
+    def insert_raw_data(self, log_table_id: str, field_data: List[dict], data: List[dict], **kwargs):
+        table_id = log_table_id
         new_data = [{self._escape_column_name(k): v for k, v in line.items()} for line in data]
         try:
             errors = self.connection.insert_rows_json(self._get_table_id(table_id), new_data)
@@ -133,8 +141,8 @@ class BigQueryAdaptor(Adaptor):
             self.logger.error("Insert {} Error: {}".format(table_id, errors), extra=self.log_context)
             return False
 
-    def load_raw_data(self, raw_table_id: str, tar_table_id: str, field_data: List[dict]):
-        return self.rename_table(raw_table_id, tar_table_id)
+    def load_log_data(self, source_id: str, start_age: int = None, end_age: int = None):
+        return True
 
     def upsert_data(self,
                     table_id: str,
@@ -145,4 +153,4 @@ class BigQueryAdaptor(Adaptor):
         return self.insert_raw_data(table_id, field_data, data)
 
     def alter_column(self, table_id: str, field_line: dict) -> bool:
-        raise NotImplementedError  # pragma: no cover
+        return True  # pragma: no cover
