@@ -36,7 +36,7 @@ def test_simple_flow(adaptor: BigQueryAdaptor):
     info = adaptor.get_ctrl_info(new_table_id)
     assert info['TABLE_ID'] == new_table_id
     adaptor.set_ctrl_info(new_table_id, fieldlist=list(dict()))
-    assert adaptor.load_raw_data(new_table_id, table_id, dict())
+    assert adaptor.load_log_data(new_table_id)
     adaptor.drop_table(table_id)
     adaptor.drop_table(new_table_id)
 
