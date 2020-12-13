@@ -154,6 +154,7 @@ class BigQueryAdaptor(Adaptor):
         for row in query_job:
             return_line = dict(row)
             break
+        return_line.pop('RN', None)
         if return_line['SOURCE_ID'] != source_id:  # pragma: no cover
             self.logger.error("Ctrl Table: {} != {}".format(return_line['SOURCE_ID'],
                                                             source_id), extra=self.log_context)  # pragma: no cover
@@ -171,7 +172,6 @@ class BigQueryAdaptor(Adaptor):
             new_ctrl_info['VERSION'] = 1
         else:
             new_ctrl_info['VERSION'] += 1
-        new_ctrl_info.pop('RN')
         if new_ctrl_info.get('META_DATA', None) is not None:
             new_ctrl_info['META_DATA'] = self._meta_data_to_string(new_ctrl_info['META_DATA'])
         if new_ctrl_info.get('FIELD_LIST', None) is not None:
