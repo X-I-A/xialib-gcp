@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import pytest
 import google.auth
@@ -22,23 +23,20 @@ def adaptor():
     conn = bigquery.Client()
     project_id = google.auth.default()[1]
     adaptor = BigQueryAdaptor(connection=conn, project_id=project_id)
+    adaptor.create_table(BigQueryAdaptor._ctrl_table_id, '', dict(), BigQueryAdaptor._ctrl_table)
     yield adaptor
+    adaptor.drop_table(BigQueryAdaptor._ctrl_table_id)
 
 
 def test_simple_flow(adaptor: BigQueryAdaptor):
-    assert adaptor.create_table(table_id, {}, field_data)
+    assert adaptor.create_table(table_id, '20200101000000000000', {}, field_data)
     assert adaptor.upsert_data(table_id, field_data, data_02)
     assert not adaptor.insert_raw_data(table_id, list(dict()), [{}])
     assert not adaptor.insert_raw_data(table_id, list(dict()), [{"id": 1}, {"id": 2}])
-    # query_job = adaptor.connection.query(sql_count)
-    # for result in query_job.result():
     assert adaptor.rename_table(table_id, new_table_id)
-    info = adaptor.get_ctrl_info(new_table_id)
-    assert info['TABLE_ID'] == new_table_id
-    adaptor.set_ctrl_info(new_table_id, fieldlist=list(dict()))
+    adaptor.set_ctrl_info(table_id, fieldlist=list(dict()))
     assert adaptor.load_log_data(new_table_id)
     adaptor.drop_table(table_id)
-    adaptor.drop_table(new_table_id)
 
 def test_escape_column_name(adaptor: BigQueryAdaptor):
     assert adaptor._escape_column_name(r"/TEST/Hello") == "_TEST_Hello"
