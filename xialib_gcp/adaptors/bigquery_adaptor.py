@@ -25,6 +25,23 @@ class BigQueryAdaptor(Adaptor):
         'BYTES': ['blob']
     }
 
+    # Ctrl Table definition
+    _ctrl_table = [
+        {'field_name': 'SOURCE_ID', 'key_flag': True, 'type_chain': ['char', 'c_255']},
+        {'field_name': 'VERSION', 'key_flag': True, 'type_chain': ['int', 'int_4']},
+        {'field_name': 'START_SEQ', 'key_flag': False, 'type_chain': ['char', 'c_20']},
+        {'field_name': 'TABLE_ID', 'key_flag': False, 'type_chain': ['char', 'c_255']},
+        {'field_name': 'LOG_TABLE_ID', 'key_flag': False, 'type_chain': ['char', 'c_255']},
+        {'field_name': 'META_DATA', 'key_flag': False, 'type_chain': ['char', 'c_5000']},
+        {'field_name': 'FIELD_LIST', 'key_flag': False, 'type_chain': ['char', 'c_1000000']},
+    ]
+
+    # variable: @table_name@, @source_id@
+    select_from_ctrl_template = ("SELECT * FROM ( "
+                                 "SELECT *, ROW_NUMBER() OVER (PARTITION BY SOURCE_ID ORDER BY VERSION DESC) RN "
+                                 "FROM `{}` WHERE SOURCE_ID = '{}' ) "
+                                 "WHERE RN = 1")
+
     def __init__(self, connection: bigquery.Client, project_id: str, location='EU', **kwargs):
         super().__init__(**kwargs)
         if not isinstance(connection, bigquery.Client):
@@ -81,8 +98,7 @@ class BigQueryAdaptor(Adaptor):
         bq_table_id = '.'.join([dataset_id, table_id.split('.')[-1]])
         return bq_table_id
 
-
-    def create_table(self, source_id: str, meta_data: dict, field_data: List[dict],
+    def create_table(self, source_id: str, start_seq: str, meta_data: dict, field_data: List[dict],
                      raw_flag: bool = False, table_id: str = None):
         if table_id is None:
             table_id = source_id
@@ -94,39 +110,81 @@ class BigQueryAdaptor(Adaptor):
             self.logger.info("Dataset already exists, donothing", extra=self.log_context)
 
         field_list = field_data.copy()
-        field_list.append(self._age_field)
-        field_list.append(self._seq_field)
-        field_list.append(self._no_field)
-        field_list.append(self._op_field)
+        if table_id != self._ctrl_table_id:
+            field_list.append(self._age_field)
+            field_list.append(self._seq_field)
+            field_list.append(self._no_field)
+            field_list.append(self._op_field)
         schema = self._get_table_schema(field_list)
         table = bigquery.Table(self._get_table_id(table_id), schema=schema)
         table = self.connection.create_table(table, True, timeout=30)
-        return True if table else False
+        if table_id == self._ctrl_table_id:
+            return True if table else False
+
+        return self.set_ctrl_info(source_id, table_id=table_id, meta_data=meta_data, field_list=field_data,
+                                  start_seq=start_seq)
+
 
     def drop_table(self, source_id: str):
         table_id = source_id
         try:
             self.connection.delete_table(self._get_table_id(table_id), not_found_ok=True, timeout=30)
+            self.set_ctrl_info(source_id, table_id=None)
         except Exception as e:  # pragma: no cover
             return False  # pragma: no cover
 
     def rename_table(self, source_id: str, new_table_id: str):
-        old_table_id = source_id
+        table_info = self.get_ctrl_info(source_id)
+        table_param = {key.lower(): value for key, value in table_info.items() if key.lower() != 'source_id'}
+        old_table_id = table_param['table_id']
         self.drop_table(new_table_id)
         job = self.connection.copy_table(self._get_table_id(old_table_id),
                                          self._get_table_id(new_table_id),
                                          timeout=60)
         job.result()
-        # self.drop_table(old_table_id)
-        return True
+
+        table_param['table_id'] = new_table_id
+        return self.set_ctrl_info(source_id, **table_param)
 
     def get_ctrl_info(self, source_id):
-        table_id = source_id
-        # Bigquery doesn't need ctrl info to build operation queries, neither for sequence control
-        return {'SOURCE_ID': source_id, 'TABLE_ID': table_id, 'META_DATA': dict(), 'FIELD_LIST': [{}]}
+        query = self.select_from_ctrl_template.format(self._get_table_id(BigQueryAdaptor._ctrl_table_id),
+                                                      source_id.replace(';', ''))
+        query_job = self.connection.query(query)
+        return_line = {'SOURCE_ID': source_id}
+        for row in query_job:
+            return_line = dict(row)
+            break
+        if return_line['SOURCE_ID'] != source_id:  # pragma: no cover
+            self.logger.error("Ctrl Table: {} != {}".format(return_line['SOURCE_ID'],
+                                                            source_id), extra=self.log_context)  # pragma: no cover
+            raise ValueError("XIA-000021")  # pragma: no cover
+        if return_line.get('META_DATA', None) is not None:
+            return_line['META_DATA'] = self._string_to_meta_data(return_line.get('META_DATA'))
+        if return_line.get('FIELD_LIST', None) is not None:
+            return_line['FIELD_LIST'] = self._string_to_field_data(return_line['FIELD_LIST'])
+        return return_line
 
     def set_ctrl_info(self, source_id: str, **kwargs):
-        return True
+        old_ctrl_info = self.get_ctrl_info(source_id)
+        new_ctrl_info = old_ctrl_info.copy()
+        if new_ctrl_info.get('VERSION', None) is None:
+            new_ctrl_info['VERSION'] = 1
+        else:
+            new_ctrl_info['VERSION'] += 1
+        new_ctrl_info.pop('RN')
+        if new_ctrl_info.get('META_DATA', None) is not None:
+            new_ctrl_info['META_DATA'] = self._meta_data_to_string(new_ctrl_info['META_DATA'])
+        if new_ctrl_info.get('FIELD_LIST', None) is not None:
+            new_ctrl_info['FIELD_LIST'] = self._field_data_to_string(new_ctrl_info['FIELD_LIST'])
+        key_list = [item['field_name'] for item in self._ctrl_table if item['field_name'].lower() in kwargs]
+        for key in key_list:
+            if key == 'META_DATA':
+                new_ctrl_info[key] = self._meta_data_to_string(kwargs[key.lower()])
+            elif key == 'FIELD_LIST':
+                new_ctrl_info[key] = self._field_data_to_string(kwargs[key.lower()])
+            elif key != 'SOURCE_ID':
+                new_ctrl_info[key] = kwargs[key.lower()]
+        return self.upsert_data(self._ctrl_table_id, self._ctrl_table, [new_ctrl_info], True)
 
     def insert_raw_data(self, log_table_id: str, field_data: List[dict], data: List[dict], **kwargs):
         table_id = log_table_id
