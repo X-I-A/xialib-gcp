@@ -30,6 +30,7 @@ def adaptor():
 
 def test_simple_flow(adaptor: BigQueryAdaptor):
     assert adaptor.create_table(table_id, '20200101000000000000', {}, field_data)
+    assert adaptor.alter_column(table_id, {'type_chain': ['char', 'c_8']}, {'type_chain': ['char', 'c_9']})
     assert adaptor.upsert_data(table_id, field_data, data_02)
     assert not adaptor.insert_raw_data(table_id, list(dict()), [{}])
     assert not adaptor.insert_raw_data(table_id, list(dict()), [{"id": 1}, {"id": 2}])
