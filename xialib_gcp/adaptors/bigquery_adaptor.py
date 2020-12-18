@@ -199,8 +199,14 @@ class BigQueryAdaptor(Adaptor):
             self.logger.error("Insert {} Error: {}".format(table_id, errors), extra=self.log_context)
             return False
 
+    def get_log_table_id(self, source_id: str):
+        return ''
+
     def load_log_data(self, source_id: str, start_age: int = None, end_age: int = None):
         return True
+
+    def get_log_info(self, source_id: str):
+        return []
 
     def upsert_data(self,
                     table_id: str,
@@ -210,5 +216,7 @@ class BigQueryAdaptor(Adaptor):
                     **kwargs):
         return self.insert_raw_data(table_id, field_data, data)
 
-    def alter_column(self, table_id: str, field_line: dict) -> bool:
-        return True  # pragma: no cover
+    def alter_column(self, table_id: str, old_field_line: dict, new_field_line: dict):
+        old_type = self._get_field_type(old_field_line['type_chain'])
+        new_type = self._get_field_type(new_field_line['type_chain'])
+        return True if old_type == new_type else False

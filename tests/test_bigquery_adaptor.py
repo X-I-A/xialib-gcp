@@ -24,12 +24,14 @@ def adaptor():
     project_id = google.auth.default()[1]
     adaptor = BigQueryAdaptor(connection=conn, project_id=project_id)
     adaptor.create_table(BigQueryAdaptor._ctrl_table_id, '', dict(), BigQueryAdaptor._ctrl_table)
+    adaptor.drop_table(new_table_id)
     yield adaptor
     adaptor.drop_table(BigQueryAdaptor._ctrl_table_id)
 
 
 def test_simple_flow(adaptor: BigQueryAdaptor):
     assert adaptor.create_table(table_id, '20200101000000000000', {}, field_data)
+    assert adaptor.alter_column(table_id, {'type_chain': ['char', 'c_8']}, {'type_chain': ['char', 'c_9']})
     assert adaptor.upsert_data(table_id, field_data, data_02)
     assert not adaptor.insert_raw_data(table_id, list(dict()), [{}])
     assert not adaptor.insert_raw_data(table_id, list(dict()), [{"id": 1}, {"id": 2}])
@@ -44,6 +46,10 @@ def test_escape_column_name(adaptor: BigQueryAdaptor):
     assert adaptor._escape_column_name(r"_TABLE_Hello") == "__TABLE_Hello"
     long_str = "".join([str(x) for x in range(100)])
     assert len(adaptor._escape_column_name(long_str)) == 128
+
+def test_dummy_log_func(adaptor: BigQueryAdaptor):
+    assert adaptor.get_log_table_id('dummy') == ''
+    assert adaptor.get_log_info('dummy') == []
 
 def test_exceptions(adaptor: BigQueryAdaptor):
     with pytest.raises(TypeError):
