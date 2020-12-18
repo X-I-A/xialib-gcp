@@ -46,6 +46,10 @@ def test_escape_column_name(adaptor: BigQueryAdaptor):
     long_str = "".join([str(x) for x in range(100)])
     assert len(adaptor._escape_column_name(long_str)) == 128
 
+def test_dummy_log_func(adaptor: BigQueryAdaptor):
+    assert adaptor.get_log_table_id('dummy') == ''
+    assert adaptor.get_log_info('dummy') == []
+
 def test_exceptions(adaptor: BigQueryAdaptor):
     with pytest.raises(TypeError):
         adap = BigQueryAdaptor(connection=object(), project_id='dummy')
