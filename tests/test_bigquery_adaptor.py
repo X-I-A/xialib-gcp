@@ -26,7 +26,7 @@ def adaptor():
     adaptor.create_table(BigQueryAdaptor._ctrl_table_id, '', dict(), BigQueryAdaptor._ctrl_table)
     adaptor.drop_table(new_table_id)
     yield adaptor
-    adaptor.drop_table(BigQueryAdaptor._ctrl_table_id)
+    # adaptor.drop_table(BigQueryAdaptor._ctrl_table_id)
 
 
 def test_simple_flow(adaptor: BigQueryAdaptor):

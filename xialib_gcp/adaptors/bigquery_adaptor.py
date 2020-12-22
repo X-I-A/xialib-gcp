@@ -121,7 +121,8 @@ class BigQueryAdaptor(Adaptor):
         if table_id == self._ctrl_table_id:
             return True if table else False
 
-        return self.set_ctrl_info(source_id, table_id=table_id, meta_data=meta_data, field_list=field_data,
+        return self.set_ctrl_info(source_id, table_id=table_id, log_table_id=table_id,
+                                  meta_data=meta_data, field_list=field_data,
                                   start_seq=start_seq)
 
 
