@@ -1,6 +1,7 @@
 import os
 import json
 import sqlite3
+import time
 from typing import List
 from google.api_core.exceptions import Conflict, BadRequest
 from google.cloud import bigquery
@@ -145,6 +146,7 @@ class BigQueryAdaptor(Adaptor):
         job.result()
 
         table_param['table_id'] = new_table_id
+        table_param['log_table_id'] = new_table_id
         return self.set_ctrl_info(source_id, **table_param)
 
     def get_ctrl_info(self, source_id):
@@ -170,7 +172,7 @@ class BigQueryAdaptor(Adaptor):
         old_ctrl_info = self.get_ctrl_info(source_id)
         new_ctrl_info = old_ctrl_info.copy()
         if new_ctrl_info.get('VERSION', None) is None:
-            new_ctrl_info['VERSION'] = 1
+            new_ctrl_info['VERSION'] = 1  # pragma: no cover
         else:
             new_ctrl_info['VERSION'] += 1
         if new_ctrl_info.get('META_DATA', None) is not None:
@@ -190,15 +192,20 @@ class BigQueryAdaptor(Adaptor):
     def insert_raw_data(self, log_table_id: str, field_data: List[dict], data: List[dict], **kwargs):
         table_id = log_table_id
         new_data = [{self._escape_column_name(k): v for k, v in line.items()} for line in data]
-        try:
-            errors = self.connection.insert_rows_json(self._get_table_id(table_id), new_data)
-        except BadRequest as e:  # pragma: no cover
-            return False  # pragma: no cover
-        if errors == []:
-            return True
-        else:  # pragma: no cover
-            self.logger.error("Insert {} Error: {}".format(table_id, errors), extra=self.log_context)
-            return False
+        for i in range(((len(new_data) - 1) // 10000) + 1):
+            start, end = i * 10000, (i + 1) * 10000
+            try:
+                errors = self.connection.insert_rows_json(self._get_table_id(table_id), new_data[start: end])
+            except BadRequest as e:  # pragma: no cover
+                return False  # pragma: no cover
+            if len(new_data) > 10000:  # bigquery quota
+                time.sleep(1)  # pragma: no cover
+            if errors == []:
+                continue
+            else:  # pragma: no cover
+                self.logger.error("Insert {} Error: {}".format(table_id, errors), extra=self.log_context)
+                return False
+        return True
 
     def get_log_table_id(self, source_id: str):
         return ''
