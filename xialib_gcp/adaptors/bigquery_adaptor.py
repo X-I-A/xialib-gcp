@@ -191,14 +191,14 @@ class BigQueryAdaptor(Adaptor):
 
     def insert_raw_data(self, log_table_id: str, field_data: List[dict], data: List[dict], **kwargs):
         table_id = log_table_id
-        new_data = [{self._escape_column_name(k): v for k, v in line.items()} for line in data]
-        for i in range(((len(new_data) - 1) // 10000) + 1):
+        for i in range(((len(data) - 1) // 10000) + 1):
             start, end = i * 10000, (i + 1) * 10000
+            load_data = [{self._escape_column_name(k): v for k, v in line.items()} for line in data[start: end]]
             try:
-                errors = self.connection.insert_rows_json(self._get_table_id(table_id), new_data[start: end])
+                errors = self.connection.insert_rows_json(self._get_table_id(table_id), load_data)
             except BadRequest as e:  # pragma: no cover
                 return False  # pragma: no cover
-            if len(new_data) > 10000:  # bigquery quota
+            if len(data) > 10000:  # bigquery quota
                 time.sleep(1)  # pragma: no cover
             if errors == []:
                 continue
