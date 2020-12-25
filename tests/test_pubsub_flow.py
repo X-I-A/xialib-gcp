@@ -13,8 +13,9 @@ topic1 = 'xialib-topic-01'
 topic2 = 'xialib-topic-02'
 subscription1 = 'xialib-sub-01'
 subscription2 = 'xialib-sub-02'
-header_1 = {'age': 2, 'data_format': 'record', 'data_spec': 'x-i-a', 'data_encode': 'gzip', 'data_store': 'body'}
-
+longstr = ''.join([str(i) for i in range(1000)])
+header_1 = {'age': 2, 'data_format': 'record', 'data_spec': 'x-i-a', 'data_encode': 'gzip', 'data_store': 'body',
+            'long_str': longstr}
 
 def callback(s: PubsubSubscriber, message: dict, source, subscription_id):
     header, data, id = s.unpack_message(message)
@@ -35,6 +36,7 @@ def test_publish_and_pull(publisher: PubsubPublisher):
     for message in subscriber.pull(project_id, subscription2):
         header, data, id = subscriber.unpack_message(message)
         assert int(header['age']) == 2
+        assert 'long_str' not in header
         subscriber.ack(project_id, subscription2, id)
 
 def test_check_destination(publisher: PubsubPublisher):
