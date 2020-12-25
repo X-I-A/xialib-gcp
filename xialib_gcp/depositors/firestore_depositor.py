@@ -62,7 +62,8 @@ class FirestoreDepositor(Depositor):
 
     def _update_header(self, ref: firestore.DocumentSnapshot, header: dict):
         content = header.copy()
-        content['filter_key'] = self._get_filter_key(content['merge_status'], content['merge_level'])
+        if content.get('merge_status', None) == 'packaged':
+            content['filter_key'] = 8
         doc_content = ref.to_dict()
         for key, value in header.items():
             if key not in doc_content and value != self.DELETE:
