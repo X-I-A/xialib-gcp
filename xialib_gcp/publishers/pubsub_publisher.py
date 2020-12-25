@@ -41,6 +41,10 @@ class PubsubPublisher(Publisher):
             data = data.encode()
         except (UnicodeEncodeError, AttributeError):
             pass
+        for key, value in header.items():
+            if len(value) > 1024:
+                self.logger.warning("header[{}] is removed because it is oversized.".format(key))
+                header.pop(key)
         future = self.publisher.publish(topic_path, data, **header)
         try:
             message_no = future.result(30)
